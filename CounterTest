@@ -1,0 +1,33 @@
+//SPDX-License Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+contract Counter{
+    uint public count = 0;
+    int8 public count2  = 0;
+    int256 public count3  = 0;
+    address public add = 0xEfbF4ab46d57E27aaf59a061256f32CAbD886817;
+    
+
+     function increaseCounter2() public{
+        count2++;
+    }
+
+     function increaseCounter23() public{
+        count3++;
+    }
+
+  /* 
+   function getCounter() public view returns(uint){
+       return count;
+
+   }
+*/
+    function increaseCounter() public{
+        count++;
+    }
+    function decreseCounter() public{
+        count--;
+    }
+
+}
