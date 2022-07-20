@@ -1,0 +1,59 @@
+//SPDX-License Identifier: GLP-3.0 
+//simple contract demo
+
+pragma solidity >=0.5.0 >0.8.7;
+
+contract Lottery{
+    address payable[] public players;
+    address public manager;
+    event winnerEvent (uint index, uint noOfPlayers, address add, uint amount, uint timestamp);
+    //address  private payable profitableAddress = 0xEfbF4ab46d57E27aaf59a061256f32CAbD886817;
+
+    constructor()  {
+        manager = msg.sender;        
+    }
+
+    receive() external payable{
+        //require(msg.value == 0.1 ether, "Error: Invalid amount was sent, Try again with  0.1 eth");
+        players.push(payable(msg.sender));
+    }
+    function getBalance()public view returns(uint){
+       // require(msg.sender == manager, "You are not permited to view balance");
+        return address(this).balance;
+    }
+    function winnableAmount() public view returns(uint){        
+        uint twentyPercent = 2 * getBalance()/10;
+        uint winable = getBalance() - twentyPercent;
+        //profitableAddress.transfer(twentyPercent);
+        return(winable);
+
+    }
+
+    function random() private view returns(uint){
+        return uint(keccak256(abi.encodePacked(block.difficulty, block.timestamp, players.length)));
+
+    }
+
+    function pickAWinner() public returns (address){
+        //require(msg.sender == manager, "You are not permited to do this");
+        //require(players.length >= 3, "More players needed");
+
+        uint r = random();
+        address payable winner;
+        uint index = r % players.length;
+        uint winAmount = winnableAmount();
+        uint winingTime = block.timestamp;
+
+        winner = players[index];
+        winner.transfer(winAmount);
+        emit winnerEvent(index, players.length, winner, winAmount, winingTime);
+        
+        players = new address payable[](0);//reseting the loteery to 0 to star another round
+
+        return winner;
+
+    }
+
+
+
+}
