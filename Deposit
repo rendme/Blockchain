@@ -1,0 +1,47 @@
+//SPDX-License Identifier: GLP-3.0 
+//simple contract demo
+
+pragma solidity >=0.5.0 >0.8.7;
+
+contract  Deposit{
+    address owner;
+    event receivedEvent (address add, uint amount, uint timestamp);
+
+    constructor(){
+        owner = msg.sender;
+    }
+    receive() external payable{
+        uint date = block.timestamp;
+        emit receivedEvent (msg.sender, msg.value, date);
+    }
+
+    fallback() external payable{
+        uint date = block.timestamp;
+        emit receivedEvent (msg.sender, msg.value, date);
+        
+    }
+    function getBalance()public view returns (uint){
+        return address(this).balance;
+    }
+
+    function depositEther() public payable{
+        uint date = block.timestamp;
+        emit receivedEvent (msg.sender, msg.value, date);
+
+    }
+
+    function transferEther(address payable recipient, uint amount) public returns (bool){
+        
+        require(owner == msg.sender, "Transfer failed, you are not authorised!!");
+        
+        if(amount<= getBalance()){
+            recipient.transfer(amount);
+            return true;  
+
+        } else{
+        return false;
+
+        }
+    }
+ 
+}
