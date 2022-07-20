@@ -1,0 +1,117 @@
+//SPDX-License Identifier: GLP-3.0 
+//simple contract demo
+
+pragma solidity >=0.5.0 >0.8.7;
+
+contract CrowdFunding{
+    mapping(address => uint) public contributors;
+    address public admin;
+    uint public noOfContributors;
+    uint public minimunAmount;
+    uint public deadline; //timestamp
+    uint public goal;
+    uint public totalAmountRaised;
+
+    struct Request{
+        string description;
+        address payable recipient;
+        uint value;
+        bool completed;
+        uint noOfVoters;
+        mapping(address=>bool) voters;
+    }
+
+    mapping(uint=>Request) public requests;
+    uint public numRequests; 
+
+    //events 
+    event ContributeEvt(uint totalAmountRaised);
+    event RefundEvt(uint amountRefunded, address refundAddress);
+    event spendingRequestEvt(string  description, address receiver, uint amount);
+    event VoteEvt(string  descriotion, uint amount, uint noOfVotes);
+    event MakePayment(string  descriotion, uint amount, address recipient);
+
+
+
+
+    constructor(uint _goal, uint _minimunAmount, uint _deadline){
+        goal = _goal;
+        deadline = _deadline;
+        admin = msg.sender;
+        minimunAmount = _minimunAmount;
+        
+    }
+
+    function contribute() public payable{
+        require(block.timestamp<=deadline, "Deadline has passed");        
+        require(msg.value >= minimunAmount, "Minimum amount expected to be greater that amount supplied");
+        if(contributors[msg.sender] == 0){
+            noOfContributors++;
+        }
+        contributors[msg.sender] +=msg.value;
+        totalAmountRaised += msg.value;
+        emit ContributeEvt(totalAmountRaised);
+    }
+
+    receive() payable external{
+        contribute();
+    }
+    function getBalance() public view returns(uint){
+        return address(this).balance;
+    }
+
+    function getReFund() public {
+        require(contributors[msg.sender] > 0, "You are not a contributer, you cannot request for a refund");
+        require(block.timestamp > deadline, "Deadline are yet to be reached, refund cannot be processed");
+        require(totalAmountRaised < goal, "Goal of the funding has been reached, refund cannotn be processed");
+        address payable receipient = payable(msg.sender);
+        uint value = contributors[msg.sender];
+        receipient.transfer(value);
+        contributors[msg.sender] = 0;
+        //totalAmountRaised -= value;
+        emit RefundEvt(value, msg.sender);
+    }
+
+    modifier onlyAdmin(){
+        require(msg.sender == admin, "Only admin can call this");
+        _;
+    }
+
+    function createSpendingRequest(string memory _description, address payable _receiver, uint _amount) public onlyAdmin{
+        Request storage newRequest = requests[numRequests];
+        
+        newRequest.description = _description;
+        newRequest.recipient = _receiver;
+        newRequest.value = _amount;
+        newRequest.completed = false;
+        newRequest.noOfVoters = 0;
+        numRequests++;
+
+        emit spendingRequestEvt(_description, _receiver, _amount);
+
+    }
+    function voteRequest(uint _requestNo) public {
+        require(contributors[msg.sender] > 0, "You are not a contributer, you cannot vote");
+        Request storage thisRequest = requests[_requestNo];
+
+        require(thisRequest.voters[msg.sender] == false, "You have already voted");
+        thisRequest.voters[msg.sender] = true;
+        thisRequest.noOfVoters++;
+
+        emit VoteEvt( thisRequest.description, thisRequest.value, thisRequest.noOfVoters);
+    }
+
+    function makePayment(uint _requestNo) public onlyAdmin{
+        require(totalAmountRaised >= goal, "Amount raise did not meet the goal");
+        Request storage thisRequest = requests[_requestNo];
+        require(thisRequest.completed == false, "The request has been completed");
+        require(thisRequest.noOfVoters >= noOfContributors/2, "Votes should be 50% or more");
+
+        thisRequest.recipient.transfer(thisRequest.value);
+        thisRequest.completed= true;
+
+        emit MakePayment( thisRequest.description, thisRequest.value, thisRequest.recipient);
+    }
+
+
+}
