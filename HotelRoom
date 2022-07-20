@@ -1,0 +1,56 @@
+//SPDX-License Identifier: GLP-3.0 
+//simple contract demo
+
+pragma solidity 0.8.7;
+
+contract HotelRoom{
+    address public owner;
+    enum  Statuses {Vacant, Occupied}
+    Statuses public currentStatus;
+    event roomEvent(address _address, uint _value);
+
+    constructor()  {
+        owner = msg.sender;
+        currentStatus = Statuses.Vacant;
+
+    }
+
+    function book()  public payable{
+        if(currentStatus != Statuses.Occupied){
+            if(msg.value >=2 ether){
+                currentStatus = Statuses.Occupied;
+                
+                emit roomEvent(msg.sender, msg.value);
+
+            }else{
+                //value of the room is 2 ether
+            }
+
+        }else{
+            //room is occupied
+        }
+       
+           
+    }
+
+    modifier OnlyWhileVacant() {
+        require(currentStatus == Statuses.Vacant, "Room is currently occupied");
+        _;
+    }
+    modifier cost(uint _amount){
+        require(msg.value >= 2 ether, "Balance is curently not enouggh to book a room");
+        _;
+    }
+    function book2() OnlyWhileVacant cost (2 ether) public payable{
+        currentStatus = Statuses.Occupied;    
+        //msg.value = msg.value-2 ether;    
+        (bool sent, bytes memory data) = owner.call{value:msg.value}("");
+        require(true);
+        emit roomEvent(msg.sender, msg.value);
+
+
+    }
+
+
+
+}
